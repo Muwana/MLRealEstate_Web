@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test API</title>
+</head>
+<body>
+    <button onclick="testLogin()">Test Login API</button>
+    <button onclick="testSignup()">Test Signup API</button>
+    <div id="result"></div>
+
+    <script>
+        async function testLogin() {
+            const response = await fetch('login.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    email: 'test@test.com',
+                    password: '123456'
+                })
+            });
+            const result = await response.json();
+            document.getElementById('result').innerHTML = '<pre>LOGIN: ' + JSON.stringify(result, null, 2) + '</pre>';
+        }
+
+        async function testSignup() {
+            const response = await fetch('signup.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    fullName: 'Test User',
+                    email: 'test@test.com',
+                    password: '123456',
+                    confirmPassword: '123456',
+                    userType: 'user'
+                })
+            });
+            const result = await response.json();
+            document.getElementById('result').innerHTML = '<pre>SIGNUP: ' + JSON.stringify(result, null, 2) + '</pre>';
+        }
+    </script>
+</body>
+</html>

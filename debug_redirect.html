@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Redirect Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .btn { padding: 10px 20px; margin: 10px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 5px; }
+        .btn:hover { background: #0056b3; }
+        .btn-success { background: #28a745; }
+        .btn-success:hover { background: #218838; }
+        .btn-danger { background: #dc3545; }
+        .btn-danger:hover { background: #c82333; }
+        .debug-info { background: #f8f9fa; padding: 15px; margin: 10px 0; border-left: 4px solid #007bff; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .log { background: #000; color: #0f0; padding: 10px; margin: 10px 0; border-radius: 5px; max-height: 300px; overflow-y: auto; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>Debug Redirect Test</h1>
+    
+    <div class="debug-info">
+        <h3>Current URL: <span id="current-url"></span></h3>
+        <h3>Local Storage Status:</h3>
+        <div id="auth-status" class="status"></div>
+        <pre id="local-storage"></pre>
+    </div>
+
+    <div>
+        <button class="btn" onclick="testRedirect()">Test JavaScript Redirect</button>
+        <button class="btn btn-success" onclick="simulateLogin()">Simulate Login Success</button>
+        <button class="btn btn-danger" onclick="clearAuthStorage()">Clear Auth Storage Only</button>
+        <button class="btn btn-danger" onclick="clearAllStorage()">Clear ALL Local Storage</button>
+        <button class="btn" onclick="testLoginForm()">Test Login Form Submission</button>
+    </div>
+
+    <div class="debug-info">
+        <h3>Console Log:</h3>
+        <div id="console-log" class="log"></div>
+    </div>
+
+    <script>
+        // Log function to display messages in the page
+        function log(message, type = 'info') {
+            const consoleLog = document.getElementById('console-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<span style="color: #888">[${timestamp}]</span> ${message}`;
+            consoleLog.appendChild(logEntry);
+            consoleLog.scrollTop = consoleLog.scrollHeight;
+            console.log(message);
+        }
+
+        // Display current info
+        function updateDisplay() {
+            document.getElementById('current-url').textContent = window.location.href;
+            document.getElementById('local-storage').textContent = JSON.stringify(localStorage, null, 2);
+            
+            const authToken = localStorage.getItem('authToken');
+            const userData = localStorage.getItem('userData');
+            const authStatus = document.getElementById('auth-status');
+            
+            if (authToken && userData) {
+                authStatus.className = 'status success';
+                try {
+                    const user = JSON.parse(userData);
+                    authStatus.innerHTML = `✅ <strong>Logged In:</strong> ${user.fullName} (${user.userType})`;
+                } catch (e) {
+                    authStatus.className = 'status error';
+                    authStatus.innerHTML = `❌ <strong>Error:</strong> Invalid user data in storage`;
+                }
+            } else {
+                authStatus.className = 'status error';
+                authStatus.innerHTML = `❌ <strong>Not Logged In:</strong> No auth data in storage`;
+            }
+        }
+
+        function testRedirect() {
+            log('Testing redirect to dashboard/user_dashboard.php...');
+            setTimeout(() => {
+                window.location.href = 'dashboard/user_dashboard.php';
+            }, 1000);
+        }
+
+        function clearAuthStorage() {
+            log('Clearing auth-related storage only...');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userData');
+            log('✅ Auth storage cleared');
+            updateDisplay();
+        }
+
+        function clearAllStorage() {
+            log('Clearing ALL local storage...');
+            localStorage.clear();
+            log('✅ All local storage cleared');
+            updateDisplay();
+        }
+
+        function simulateLogin() {
+            log('Simulating successful login...');
+            
+            const mockResponse = {
+                success: true,
+                message: "Debug redirect test",
+                dashboardUrl: "dashboard/user_dashboard.php",
+                user: {
+                    userId: "debug_user_123",
+                    fullName: "Debug User",
+                    email: "debug@example.com",
+                    userType: "user"
+                }
+            };
+
+            // Store in localStorage
+            localStorage.setItem('authToken', 'debug_token_' + Date.now());
+            localStorage.setItem('userData', JSON.stringify(mockResponse.user));
+            
+            log('✅ Simulated login complete - data stored in localStorage');
+            log(`📁 User: ${mockResponse.user.fullName} (${mockResponse.user.userType})`);
+            
+            updateDisplay();
+            
+            // Show redirect countdown
+            let countdown = 3;
+            const countdownInterval = setInterval(() => {
+                log(`🔄 Redirecting to dashboard in ${countdown}...`);
+                countdown--;
+                if (countdown < 0) {
+                    clearInterval(countdownInterval);
+                    log('🎯 EXECUTING REDIRECT NOW!');
+                    window.location.href = mockResponse.dashboardUrl;
+                }
+            }, 1000);
+        }
+
+        function testLoginForm() {
+            log('Testing login form submission...');
+            
+            // Create a mock login form submission
+            const formData = {
+                email: 'test@example.com',
+                password: 'password123'
+            };
+
+            log(`Submitting login: ${formData.email}`);
+
+            fetch('test_login.php')
+                .then(response => response.json())
+                .then(data => {
+                    log('✅ Login test successful!');
+                    log(`Response: ${JSON.stringify(data)}`);
+                    
+                    // Store the data
+                    localStorage.setItem('authToken', 'test_token_' + Date.now());
+                    localStorage.setItem('userData', JSON.stringify(data.user));
+                    
+                    updateDisplay();
+                    
+                    // Redirect
+                    setTimeout(() => {
+                        log('🎯 Redirecting to: ' + data.dashboardUrl);
+                        window.location.href = data.dashboardUrl;
+                    }, 2000);
+                })
+                .catch(error => {
+                    log('❌ Login test failed: ' + error.message);
+                });
+        }
+
+        // Initialize display
+        updateDisplay();
+        log('Debug page loaded successfully');
+        log('Check the auth status above to see if you are logged in');
+    </script>
+</body>
+</html>
